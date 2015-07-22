@@ -1,0 +1,42 @@
+** Client Protocol **
+
+* Packet structure *
+
+Data type (1byte) - Packet number (1 byte uint8_t) - Data (x bytes)
+
+* Connectivity *
+
+0x00 - fingerprint (20bytes), some random sequence (20bytes), signed sequence (x bytes)
+0x01 - fingerprint (20bytes), some random sequence (20bytes), signed sequence (x bytes)
+0x02 - Acknowledgement
+0x03 - Bad info, bad packet id sent as data
+0x04 - Already connected
+0x05 - Disconnect (no acknowledgement is necessary)
+0x06 - Heartbeat length proposal. 1byte, length in seconds
+0x07 - Heartbeat length answer
+0x08 - Heartbeat packet
+
+* Connection process *
+
+Initiate connection by sending 0x00 packet.
+If information is correct 0x01 is received, otherwise 0x03.
+Check if other peer's public key is good. If it is send 0x02, otherwise 0x03.
+Then send 0x06 with desired length. 0x07 is received with heartbeat length.
+
+
+0x10 - Request missing packets
+0x11 - Missing packet
+0x12 - Missing packet not in queue anymore
+
+0x20 im
+0x21 voice
+0x22 video
+
+
+* Connection process V2 *
+
+Search for fingerprint in tracker. 
+Send connect request.
+Receive his data, verify his fingerprint.
+Send connection accepted.
+Agree on heartbeat rate.
