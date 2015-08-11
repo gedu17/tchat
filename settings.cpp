@@ -36,66 +36,68 @@ settings::~settings() {
 /* Settings */
 
 void settings::create_settings() {
-    this->log.write("Creating settings file");
+    QSqlDatabase db = QSqlDatabase::database("data");
+    QSqlQuery query(db);
+    query.exec("CREATE TABLE `profiles` ("
+	"`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
+	"`alias`	TEXT,"
+	"`pubkey`	TEXT,"
+        "`avatar`       TEXT,"
+        "`default`   INTEGER DEFAULT 0)");
+    query.exec("CREATE TABLE `friends` ("
+	"`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
+	"`alias`	TEXT,"
+	"`fpr`	TEXT,"
+	"`avatar`	TEXT,"
+	"`last_seen`	INTEGER,"
+	"`pid`	INTEGER)");
+    query.exec("CREATE TABLE `chat_log` ("
+	"`id`	INTEGER PRIMARY KEY AUTOINCREMENT,"
+	"`friend_id`	INTEGER,"
+	"`chat_type`	INTEGER,"
+	"`time`	INTEGER,"
+	"`value`	TEXT)");
+
+    string ins = "INSERT INTO `profiles` (`alias`, `pubkey`, `avatar`, `default`) VALUES ('";
+    ins += this->alias;
+    ins += "', '";
+    ins += this->key;
+    ins += "', '";
+    ins += DEFAULT_AVATAR_FILE;
+    ins += "', 1)";
+    query.exec(ins.c_str());
     
-    ofstream sf;
-    sf.open(this->file);
-    sf << "key=" << this->key << endl;
-    sf << "alias=" << this->alias << endl;
-    sf.close();
+    this->log.write("Creating settings db");
 }
 
-bool settings::read_settings() {
-    struct stat buffer;   
-    bool status = true;
-    if((stat(this->dir.c_str(), &buffer) == 0) && S_ISDIR(buffer.st_mode)){
-        if((stat(this->gpgdir.c_str(), &buffer) == 0) && S_ISDIR(buffer.st_mode)){
-        } else {
-            mkdir(this->gpgdir.c_str(), S_IRUSR | S_IWUSR | S_IXUSR);
-        }
+void settings::read_settings(int id) {
+    this->id = id;
+    QSqlDatabase db = QSqlDatabase::database("data");
+    QSqlQuery query(db);
+    string q = "SELECT * FROM `profiles` WHERE `id` = '";
+    q += to_string(id);
+    q += "' LIMIT 1";
     
-        if(!(stat (this->file.c_str(), &buffer) == 0)) {
-            this->log.write("Settings file not found !");
-            status = false;
-        } else {
-            ifstream sf;
-            sf.open(this->file);
-            string temp;
-            while(getline(sf, temp)) {
-                if(temp.substr(0, 4) == "key=") {
-                    this->key = temp.substr(4);
-                } else if(temp.substr(0, 6) == "alias=") {
-                    this->alias = temp.substr(6);
-                } else {
-                    string pr = "Unknown setting in settings file: ";
-                    pr += temp;
-                    log.write(pr, 2);
-                    status = false;
-                }
-            }
-        }
-    } else {
-        status = false;
-        mkdir(this->dir.c_str(), S_IRUSR | S_IWUSR | S_IXUSR);
-        mkdir(this->gpgdir.c_str(), S_IRUSR | S_IWUSR | S_IXUSR);
+    query.exec(q.c_str());
+    while(query.next()) {
+        this->alias = query.value(1).toString().toStdString();
+        this->key = query.value(2).toString().toStdString();
+        this->avatar = query.value(3).toString().toStdString();
     }
-    return status;
-}
-
-void settings::update_settings() {
-    this->log.write("Updating settings file");
-        
-    ofstream sf;
-    sf.open(this->file);
-    sf << "key=" << this->key << endl;
-    sf << "as=" << this->alias << endl;
-    sf.close();
 }
 
 /* Alias */
 
 void settings::change_alias(string alias) {
     this->alias = alias;
+    QSqlDatabase db = QSqlDatabase::database("data");
+    QSqlQuery query(db);
+    string q = "UPDATE `profiles` SET `alias` = '";
+    q += alias;
+    q += "' WHERE `id` = '";
+    q += to_string(this->id);
+    q += "'";
+    query.exec(q.c_str());
 }
 
 string settings::get_alias() {
@@ -110,8 +112,30 @@ string settings::get_key() {
 
 void settings::set_key(string key) {
     this->key = key;
+    QSqlDatabase db = QSqlDatabase::database("data");
+    QSqlQuery query(db);
+    string q = "UPDATE `profiles` SET `pubkey` = '";
+    q += key;
+    q += "' WHERE `id` = '";
+    q += to_string(this->id);
+    q += "' LIMIT 1";
+    query.exec(q.c_str());
 }
 
+/* Avatar */
 
+string settings::get_avatar() {
+    return this->avatar;
+}
 
-
+void settings::set_avatar(string avatar) {
+    this->avatar = avatar;
+    QSqlDatabase db = QSqlDatabase::database("data");
+    QSqlQuery query(db);
+    string q = "UPDATE `profiles` SET `avatar` = '";
+    q += avatar;
+    q += "' WHERE `id` = '";
+    q += to_string(this->id);
+    q += "' LIMIT 1";
+    query.exec(q.c_str());
+}

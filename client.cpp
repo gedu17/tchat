@@ -181,12 +181,12 @@ void Client::get_missing_packets(string id) {
     string data;
     for(uint i = 0; i < this->conn_queue.size(); i++) {
         if(this->conn_queue.at(i).conn_hash == id) {
-            for(uint i = this->conn_queue.at(i).his_packet_num+1; i < this->buffer[1]; i++) {
-                data += (uint8_t)i;
+            for(uint j = this->conn_queue.at(i).his_packet_num+1; j < this->buffer[1]; j++) {
+                data += (uint8_t)j;
                 mps tmp;
                 tmp.added = steady_clock::now();
                 tmp.id = id;
-                tmp.packet_id = i;
+                tmp.packet_id = j;
                 this->missing_packet_queue.push_back(tmp);
             }
             break;
@@ -245,10 +245,11 @@ sockaddr_in Client::get_struct(string id) {
     }
 }
 
-addrinfo *Client::get_struct(string id, bool conn) {
+addrinfo *Client::get_structv2(string id) {
     addrinfo *empty;
     if(this->conn_to_queue.size() == 0) {
         this->log.write("Bad struct id", 2);
+        getaddrinfo("127.0.0.1", NULL, NULL, &empty);
         return empty;
     } else {
         for(uint i = 0; i < this->conn_to_queue.size(); i++) {
@@ -714,6 +715,7 @@ void Client::handle_missing_packets(int type, sockaddr_in fromaddr) {
                         return tmp.at(i).packet;
                     }
                 }
+                return "";
             };
             
             for(uint i = 2; i < this->buffer_size; i++) {
@@ -850,6 +852,7 @@ bool Client::is_missing_packets(string id) {
             }
         }
     }
+    return false;
 }
 
 bool Client::is_still_connected(string id) {
@@ -1011,7 +1014,7 @@ string Client::create_packet(int type, string data, uint8_t packet_number, int c
 void Client::receive_packet() {
     struct sockaddr_in fromaddr;
     socklen_t addrlen = sizeof (fromaddr);
-    int in = recvfrom(this->sock, this->buffer, BUFFER_LENGTH, 0, (struct sockaddr *) &fromaddr, &addrlen);
+    uint in = recvfrom(this->sock, this->buffer, BUFFER_LENGTH, 0, (struct sockaddr *) &fromaddr, &addrlen);
     if(in > 0) {
         string tmp = "New data ( ";
         tmp += to_string(in);
@@ -1045,7 +1048,7 @@ void Client::send_packet() {
                     }
                 }
             } else {
-                addrinfo *str = this->get_struct(this->send_queue.at(i).id, false);
+                addrinfo *str = this->get_structv2(this->send_queue.at(i).id);
                 sendto(this->sock, this->send_queue.at(i).packet.c_str(), this->send_queue.at(i).packet.length(), 0, str->ai_addr, str->ai_addrlen);
                 
                 this->last_send_struct = this->send_queue.at(i);

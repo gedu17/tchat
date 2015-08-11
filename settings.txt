@@ -1,2 +1,0 @@
-key=32618BB8EEB8B532
-alias=I am unnamed

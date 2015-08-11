@@ -150,7 +150,7 @@ namespace tracker_thread {
         }
     }
 
-    bool create_socket() {
+    void create_socket() {
         sock = socket(AF_INET, SOCK_DGRAM, 0);
         fcntl(sock, F_SETFL, O_NONBLOCK);
 
@@ -167,8 +167,9 @@ namespace tracker_thread {
 
         if (bind(sock, (struct sockaddr *) &addr, sizeof (addr)) < 0) {
             log.write("Could not bind socket. (Port probably in use)", 2);
+        } else {
+            socket_created = true;
         }
-        socket_created = true;
     }
 
     void do_actions() {
@@ -224,7 +225,7 @@ namespace tracker_thread {
         struct sockaddr_in fromaddr;
         socklen_t addrlen = sizeof (fromaddr);
 
-        int len = recvfrom(sock, buffer, BUFFER_LENGTH, 0, (struct sockaddr *) &fromaddr, &addrlen);
+        uint len = recvfrom(sock, buffer, BUFFER_LENGTH, 0, (struct sockaddr *) &fromaddr, &addrlen);
         if (len > 0) {
             log.write("Received response from server.", 1);
             //find neccesary tracker object

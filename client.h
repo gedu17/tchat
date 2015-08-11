@@ -60,7 +60,7 @@ private:
     
     /* Variables */
     int sock;
-    int buffer_size;
+    uint buffer_size;
     int out_port;
     
     bool socket_created;
@@ -69,9 +69,9 @@ private:
     string keyserver;
     string fingerprint;
   
-    int max_missing_packets;
-    int conn_hash_length;
-    int backup_length;
+    uint max_missing_packets;
+    uint conn_hash_length;
+    uint backup_length;
     unsigned char *buffer;
     
     gpgme_ctx_t gpgctx;
@@ -88,7 +88,7 @@ private:
     
     /* Struct */
     sockaddr_in get_struct(string id);
-    addrinfo *get_struct(string id, bool conn);
+    addrinfo *get_structv2(string id);
     
     /* Packet */
     string create_packet(int type, string data, uint8_t packet_number, int connected);

@@ -24,29 +24,57 @@
 #include "client_thread.h"
 #include "settings.h"
 #include "utils.h"
-/*
- * 
- */
-int main(int argc, char** argv) {
+#include "mainwindow.h"
 
-    string gpgdir = getenv("HOME");
-    gpgdir += "/.tchat/gnupg";
+int main(int argc, char** argv) {
     string homedir = "";
+    for(int i = 1; i < argc; i++) {
+        if(strcmp(argv[i], "--settings") == 0) {
+            homedir = argv[i+1];
+        }
+    }
+    
     if(homedir == "") {
         homedir = getenv("HOME");
         homedir += "/.tchat/";
     }
-    string alias;
-    string fingerprint;
-    gpgme_key_t the_key;
-    gpgme_ctx_t ctx;
- 
-    utils::init_gpgme(&ctx, gpgdir);
-    utils::read_settings(homedir, ctx, &the_key, &alias, &fingerprint);
-    gpgme_signers_add(ctx, the_key);
-    cout << "Alias = " << alias << endl;
-    cout << "Fingerprint = " << fingerprint << endl;
-    Client *cl = new Client(fingerprint, ctx, homedir, DEFAULT_KEY_SERVER);
+    
+    cout << "homedir is " << homedir << endl;
+    
+    
+    //gpgme_signers_add(ctx, the_key);
+    QApplication app(argc, argv);
+    /* Qt */
+    
+    MainWindow *win = new MainWindow(homedir);
+    
+    if(win->init_gpgme()) {
+        if(win->init_db()) {
+            
+            if(!win->select_profile()) {
+                return 0;
+            }
+            
+            
+            if(win->get_profile_status() == -1) {
+                return 0;
+            } else if(win->get_profile_status() == 1) {
+                win->read_friendlist();
+                win->set_profile();
+            } else if(win->get_profile_status() == 0) {
+                cout << "Something bad happened :(" << endl;
+            }
+            
+            win->show();            
+        } else {
+            return 0;
+        }
+    }else {
+        return 0;
+    }
+    
+    return app.exec();
+    /*Client *cl = new Client(fingerprint, ctx, homedir, DEFAULT_KEY_SERVER);
     tracker_thread::set_client_port(cl->get_out_port());
     client_thread::setClient(cl);
     tracker_thread::set_announce_hash(fingerprint);
@@ -58,8 +86,6 @@ int main(int argc, char** argv) {
     tracker_thread::add_action(0, 1);
     
     trackers.join();
-    client.join();
-
-    return 0;
+    client.join();*/
 }
 

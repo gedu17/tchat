@@ -101,5 +101,15 @@ struct tqs {
     int leechers = 0;
 };
 
+/*struct frs {
+    string fingerprint;
+    int status = 0;
+    string csid;
+    string custom_status = "";
+    string alias;
+    string avatar = DEFAULT_AVATAR_FILE;
+    long int last_seen = 0;
+};*/
+
 #endif	/* STRUCTS_H */
 

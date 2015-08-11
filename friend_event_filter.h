@@ -15,32 +15,23 @@
  * 
  */
 
+#ifndef FRIEND_EVENT_FILTER_H
+#define	FRIEND_EVENT_FILTER_H
 #include "includes.h"
-#include "log.h"
-#include "utils.h"
-#ifndef TRACKER_THREAD_H
-#define	TRACKER_THREAD_H
-namespace tracker_thread {
-    /* Actions */
-    void add_action(int id, int announce_type, string hash = "");
-    void add_action(int id, vector<string> hashes);
-    void remove_action(int id);    
+#include "mainwindow.h"
+class friend_event_filter : public QObject {
+    Q_OBJECT
     
-    /* Workflow */
-    void run();
-    void stop();
-    
-    /* Helpers */
-    bool add_tracker(string hostname, int port);
-    void create_socket();
-    void set_announce_hash(string hash);
-    void set_client_port(int port);
-    void receive_packet();
-    void check_reannounce();
-    void do_actions();
-    void check_connects();
-    
-}
+    public:
+    friend_event_filter(MainWindow *window);
+    virtual ~friend_event_filter();
+    protected:
+    bool eventFilter(QObject *obj, QEvent *event);
+private:
+    MainWindow *window;
+    QEvent::Type last_event;
+    string obj_name;
+};
 
-#endif	/* TRACKER_THREAD_H */
+#endif	/* FRIEND_EVENT_FILTER_H */
 

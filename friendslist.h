@@ -15,50 +15,35 @@
  * 
  */
 
+#ifndef FRIENDSLIST_H
+#define	FRIENDSLIST_H
 #include "includes.h"
+#include "structs.h"
 #include "log.h"
-#ifndef SETTINGS_H
-#define	SETTINGS_H
-
-class settings {
+#include "my_friend.h"
+class friendslist {
 public:
-    settings(string filename);
-    settings();
-    virtual ~settings();
-    
-    
-    /* Settings */
-    void create_settings();
-    void read_settings(int id);
-    //void update_settings();
-    
-    /* Alias */
-    void change_alias(string alias);
-    string get_alias();
-    
-    /* Key */
-    string get_key();
-    void set_key(string key);
-    
-    /* Avatar */
-    string get_avatar();
-    void set_avatar(string avatar);
-private:
-    /* Variables */
+    friendslist(string file, int id);
+
+    virtual ~friendslist();
+    uint get_friend_list_count();
+    int get_online_count();
+    bool set_custom_status(string fingerprint, string status);
+    bool set_status(string fingerprint, int status);
+    bool add_friend(string csid, string alias, string fingerprint, string avatar);
+    bool remove_friend(string fingerprint);
+    void read_friend_list();
+    my_friend *get_friend(uint id);
+    bool set_avatar(string fingerprint, string avatar);
+private:    
+    //void create_friend_list();
+    long int get_current_time();
+    vector<my_friend *> friend_list;
+    int online_counter;
     string file;
-    string key;
-    string dir;
-    string gpgdir;
-    string alias;
-    string avatar;
-    int id;
-    
-    /* Log */
     Log log;
-    
-    /* QtSql */
-    QSqlDatabase *db;
+    int id;
 };
 
-#endif	/* SETTINGS_H */
+#endif	/* FRIENDSLIST_H */
 

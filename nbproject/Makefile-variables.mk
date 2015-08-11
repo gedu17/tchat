@@ -22,6 +22,14 @@ CND_ARTIFACT_PATH_Release=dist/Release/CLang-Linux-x86/tchat
 CND_PACKAGE_DIR_Release=dist/Release/CLang-Linux-x86/package
 CND_PACKAGE_NAME_Release=tchat.tar
 CND_PACKAGE_PATH_Release=dist/Release/CLang-Linux-x86/package/tchat.tar
+# NewConfiguration configuration
+CND_PLATFORM_NewConfiguration=GNU-Linux-x86
+CND_ARTIFACT_DIR_NewConfiguration=dist/NewConfiguration/GNU-Linux-x86
+CND_ARTIFACT_NAME_NewConfiguration=tchat
+CND_ARTIFACT_PATH_NewConfiguration=dist/NewConfiguration/GNU-Linux-x86/tchat
+CND_PACKAGE_DIR_NewConfiguration=dist/NewConfiguration/GNU-Linux-x86/package
+CND_PACKAGE_NAME_NewConfiguration=tchat.tar
+CND_PACKAGE_PATH_NewConfiguration=dist/NewConfiguration/GNU-Linux-x86/package/tchat.tar
 #
 # include compiler specific variables
 #

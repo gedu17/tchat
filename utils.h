@@ -27,16 +27,10 @@ namespace utils {
     is import_key_from_keyserver(string homedir, string keyserver, string key);
     vector<ks> search_keyserver(string homedir, string keyserver, string key);
     
-    /* Gpgme */
-    void init_gpgme(gpgme_ctx_t *ctx, string gpgdir);
-    
-    /* Settings*/
-    void read_settings(string sett, gpgme_ctx_t ctx, gpgme_key_t *the_key, string *alias, string *fingerprint);
-    
     /* Tracker queue*/
     vector<tqs> get_tq(int action);
     void insert_tq(tqs tq);
-    void remove_tq(int id);
+    void remove_tq(uint id);
     bool update_tq(string transaction_id, vector<ss> scrape_queue);
     bool update_tq(string transaction_id, vector<ads> announce_queue, int seeders, int leechers);
     

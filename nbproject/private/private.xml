@@ -1,15 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project-private xmlns="http://www.netbeans.org/ns/project-private/1">
     <data xmlns="http://www.netbeans.org/ns/make-project-private/1">
-        <activeConfTypeElem>1</activeConfTypeElem>
+        <activeConfTypeElem>4</activeConfTypeElem>
         <activeConfIndexElem>0</activeConfIndexElem>
     </data>
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/home/gedas/NetBeansProjects/tchat/includes.h</file>
-            <file>file:/home/gedas/NetBeansProjects/tchat/structs.h</file>
-            <file>file:/home/gedas/NetBeansProjects/tchat/tracker.h</file>
+            <file>file:/home/gedas/projs/tchat/main.cpp</file>
+            <file>file:/home/gedas/projs/tchat/my_friend.cpp</file>
+            <file>file:/home/gedas/projs/tchat/changelog.md</file>
+            <file>file:/home/gedas/projs/tchat/friendslist.h</file>
+            <file>file:/home/gedas/projs/tchat/client.cpp</file>
+            <file>file:/home/gedas/projs/tchat/friendslist.cpp</file>
+            <file>file:/home/gedas/projs/tchat/my_friend.h</file>
+            <file>file:/home/gedas/projs/tchat/log.cpp</file>
+            <file>file:/home/gedas/projs/tchat/structs.h</file>
+            <file>file:/home/gedas/projs/tchat/includes.h</file>
+            <file>file:/home/gedas/projs/tchat/todo.md</file>
+            <file>file:/home/gedas/projs/tchat/mainwindow.cpp</file>
+            <file>file:/home/gedas/projs/tchat/mainwindow.h</file>
         </group>
     </open-files>
 </project-private>
