@@ -14,7 +14,7 @@ CC            = clang
 CXX           = clang++
 DEFINES       = -DQT_WEBKITWIDGETS_LIB -DQT_WIDGETS_LIB -DQT_WEBKIT_LIB -DQT_GUI_LIB -DQT_SQL_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB
 CFLAGS        = -pipe -g -Wall -W -D_REENTRANT -fPIC $(DEFINES)
-CXXFLAGS      = -pipe -pthread -lgpgme -fext-numeric-literals -std=c++14 -g -Wall -W -D_REENTRANT -fPIC $(DEFINES)
+CXXFLAGS      = -pipe -pthread -lgpgme -std=c++14 -g -Wall -W -D_REENTRANT -fPIC $(DEFINES)
 INCPATH       = -Inbproject -I. -isystem /usr/include/qt -isystem /usr/include/qt/QtWebKitWidgets -isystem /usr/include/qt/QtWidgets -isystem /usr/include/qt/QtWebKit -isystem /usr/include/qt/QtGui -isystem /usr/include/qt/QtSql -isystem /usr/include/qt/QtNetwork -isystem /usr/include/qt/QtCore -I. -I/usr/lib/qt/mkspecs/linux-g++
 QMAKE         = /usr/lib/qt/bin/qmake
 DEL_FILE      = rm -f

@@ -60,14 +60,14 @@
   <confs>
     <conf name="Debug" type="4">
       <toolsSet>
-        <compilerSet>GNU|GNU</compilerSet>
+        <compilerSet>CLang|CLang</compilerSet>
         <dependencyChecking>true</dependencyChecking>
         <rebuildPropChanged>false</rebuildPropChanged>
       </toolsSet>
       <qt>
         <modules>core gui widgets sql webkit</modules>
         <defs>
-          <Elem>QMAKE_CXXFLAGS += -pthread -lgpgme -fext-numeric-literals -std=c++14</Elem>
+          <Elem>QMAKE_CXXFLAGS += -pthread -lgpgme -std=c++14</Elem>
           <Elem>QT += webkitwidgets</Elem>
         </defs>
       </qt>

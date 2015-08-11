@@ -1,7 +1,7 @@
 # This file is generated automatically. Do not edit.
 # Use project properties -> Build -> Qt -> Expert -> Custom Definitions.
 TEMPLATE = app
-DESTDIR = dist/Debug/GNU-Linux-x86
+DESTDIR = dist/Debug/CLang-Linux-x86
 TARGET = tchat
 VERSION = 1.0.0
 CONFIG -= debug_and_release app_bundle lib_bundle
@@ -13,14 +13,14 @@ HEADERS += client.h client_thread.h friend_event_filter.h friendslist.h includes
 FORMS +=
 RESOURCES +=
 TRANSLATIONS +=
-OBJECTS_DIR = build/Debug/GNU-Linux-x86
+OBJECTS_DIR = build/Debug/CLang-Linux-x86
 MOC_DIR = 
 RCC_DIR = 
 UI_DIR = 
-QMAKE_CC = gcc
-QMAKE_CXX = g++
+QMAKE_CC = clang
+QMAKE_CXX = clang++
 DEFINES += 
 INCLUDEPATH += 
 LIBS += -lgpgme  
-QMAKE_CXXFLAGS += -pthread -lgpgme -fext-numeric-literals -std=c++14
+QMAKE_CXXFLAGS += -pthread -lgpgme -std=c++14
 QT += webkitwidgets
