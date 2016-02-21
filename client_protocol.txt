@@ -23,10 +23,25 @@ If information is correct 0x01 is received, otherwise 0x03.
 Check if other peer's public key is good. If it is send 0x02, otherwise 0x03.
 Then send 0x06 with desired length. 0x07 is received with heartbeat length.
 
+* Friendship *
+
+0x09 - Request friendship
+0x0A0 - (0)Request rejected
+0x0A1 - (1)Request accepted
+0x0B - Not in friendship
+
+* Gifs *
+
+0xXX - Request gif by checksum
+0xXX - Send gif by checksum
+
+* Missing Packets *
 
 0x10 - Request missing packets
 0x11 - Missing packet
 0x12 - Missing packet not in queue anymore
+
+* Communication *
 
 0x20 im
 0x21 voice

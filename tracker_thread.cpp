@@ -38,8 +38,11 @@ namespace tracker_thread {
     bool socket_created = false;
     int out_port = 0;
     int sock;
+    QUdpSocket *qsock;
     int client_port;
 
+    bool cl_port = false;
+    bool cl_hash = false;
 
     /* Various */
     uint connected_trackers = 0;
@@ -94,21 +97,23 @@ namespace tracker_thread {
     void run() {
         log.write("Starting tracker thread.", 1);
         while (cycle_run) {
+            if(cl_port && cl_hash) {
+                if (!socket_created) {
+                    //create_socket();
+                    create_qsocket();
+                }
 
-            if (!socket_created) {
-                create_socket();
+                check_connects();
+
+                receive_packet();
+
+                do_actions();
+
+                check_reannounce();
+
+                
             }
-
-            check_connects();
-
-            receive_packet();
-
-            do_actions();
-
-            check_reannounce();
-
             std::this_thread::sleep_for(200ms);
-
         }
     }
 
@@ -150,7 +155,7 @@ namespace tracker_thread {
         }
     }
 
-    bool create_socket() {
+    void create_socket() {
         sock = socket(AF_INET, SOCK_DGRAM, 0);
         fcntl(sock, F_SETFL, O_NONBLOCK);
 
@@ -167,14 +172,22 @@ namespace tracker_thread {
 
         if (bind(sock, (struct sockaddr *) &addr, sizeof (addr)) < 0) {
             log.write("Could not bind socket. (Port probably in use)", 2);
+        } else {
+            socket_created = true;
         }
+    }
+    
+    void create_qsocket() {
+        qsock = new QUdpSocket();
+        qsock->bind();
+        out_port = qsock->localPort();
         socket_created = true;
     }
 
     void do_actions() {
         action_lock.lock();
         for (uint i = 0; i < action_queue.size(); i++) {
-            if (tracker_list.at(action_queue.at(i).id).get_waiting_response() == false) {
+            if (tracker_list.at(action_queue.at(i).id).get_waiting_response() == false && tracker_list.at(action_queue.at(i).id).is_connected()) {
                 if (action_queue.at(i).act == 1) {
                     tracker_list.at(action_queue.at(i).id).announce(action_queue.at(i).hash, action_queue.at(i).announce_type, client_port);
                     tracker_list.at(action_queue.at(i).id).set_action_id(i);
@@ -192,6 +205,7 @@ namespace tracker_thread {
                 if (diff.count() >= 15) {
                     log.write("No response for 15 seconds, resending request.", 1);
                     tracker_list.at(action_queue.at(i).id).set_waiting_response(false);
+                    tracker_list.at(action_queue.at(i).id).set_action_time(steady_clock::now());
                 }
             }
         }
@@ -203,7 +217,10 @@ namespace tracker_thread {
             log.write("Connecting to trackers.", 1);
             for (uint i = 0; i < tracker_list.size(); i++) {
                 if (!tracker_list.at(i).get_connected()) {
-                    tracker_list.at(i).set_socket(sock);
+                    
+                    //tracker_list.at(i).set_socket(sock);
+                    tracker_list.at(i).set_socket(qsock);
+                    
                     tracker_list.at(i).connect();
                     connected_trackers++;
                 }
@@ -213,18 +230,20 @@ namespace tracker_thread {
 
     void set_announce_hash(string hash) {
         announce_hash = hash;
+        cl_hash = true;
     }
 
     void set_client_port(int port) {
         client_port = port;
+        cl_port = true;
     }
 
     void receive_packet() {
         //check for incoming data
-        struct sockaddr_in fromaddr;
+        /*struct sockaddr_in fromaddr;
         socklen_t addrlen = sizeof (fromaddr);
 
-        int len = recvfrom(sock, buffer, BUFFER_LENGTH, 0, (struct sockaddr *) &fromaddr, &addrlen);
+        uint len = recvfrom(sock, buffer, BUFFER_LENGTH, 0, (struct sockaddr *) &fromaddr, &addrlen);
         if (len > 0) {
             log.write("Received response from server.", 1);
             //find neccesary tracker object
@@ -262,6 +281,68 @@ namespace tracker_thread {
                 tracker_list.at(id).finish_scrape();
                 remove_action(tracker_list.at(id).get_action_id());
             }
-        }
+        }*/
+        
+        while(qsock->hasPendingDatagrams()) {
+            QByteArray datagram;
+            datagram.resize(qsock->pendingDatagramSize());
+            QHostAddress sender;
+            quint16 senderPort;
+
+            qint64 len = qsock->readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
+            string tmp = "New data ( ";
+            tmp += to_string(datagram.size());
+            tmp += " ) from ";
+            tmp += sender.toString().toStdString();
+            log.write(tmp, 1);
+
+            int id;
+            for (uint i = 0; i < tracker_list.size(); i++) {
+                //if (inet_ntoa(tracker_list.at(i).get_hostname_in()) == inet_ntoa(fromaddr.sin_addr) &&
+                //        tracker_list.at(i).get_port_in() == fromaddr.sin_port) {
+                if(sender.toIPv4Address() == tracker_list.at(i).get_hostname_in() && tracker_list.at(i).get_port_in() == senderPort){
+                    id = i;
+                    break;
+                }
+            }
+            
+            //rewrite to our buffer
+            for(int i = 0; i < datagram.size(); i++) {
+                buffer[i] = datagram.at(i);
+            }
+            //buffer_size = datagram.size();            
+            /*us tmpus;
+            tmpus.adr = sender;
+            tmpus.port = senderPort;
+            this->handle_data(tmpus);
+            this->clear_buffer();*/
+            
+            if (buffer[0] == 3) {
+                string err = "Tracker responded with error message. Tid: ";
+                for (uint i = 4; i < 8; i++) {
+                    err += buffer[i];
+                }
+                err += ". Message: ";
+                for (uint i = 8; i < len; i++) {
+                    err += to_string(buffer[i]);
+                }
+                log.write(err, 2);
+            } else if (buffer[0] == 0 && !tracker_list.at(id).get_connected()) {
+                tracker_list.at(id).set_buffer(buffer, len);
+                tracker_list.at(id).finish_connect();
+                string tmp = "Succesfully connected to ";
+                tmp += tracker_list.at(id).get_hostname();
+                log.write(tmp, 1);
+            } else if (buffer[3] == 1) {
+                tracker_list.at(id).set_buffer(buffer, len);
+                tracker_list.at(id).finish_announce();
+                remove_action(tracker_list.at(id).get_action_id());
+            } else if (buffer[3] == 2) {
+                tracker_list.at(id).set_buffer(buffer, len);
+                tracker_list.at(id).finish_scrape();
+                remove_action(tracker_list.at(id).get_action_id());
+            }
+            
+        }        
     }
 }

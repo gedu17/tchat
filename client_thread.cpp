@@ -33,18 +33,24 @@ namespace client_thread {
     void run() {
         log.write("Starting client thread.", 1);
         while(cycle_run) {
-            //check tracker queue for data
-            obj->check_tq();
-            
-            obj->check_heartbeats();
-            
-            obj->check_missing_packets();
-            
-            obj->receive_packet();
-            
-            obj->send_packet();
-            
+            if(obj->obj_status) {
+                //check tracker queue for data
+                obj->check_tq();
+
+                obj->check_heartbeats();
+
+                obj->check_missing_packets();
+
+                //obj->receive_packet();
+                
+                obj->receive_qpacket();
+
+                //obj->send_packet();
+                
+                obj->send_packet();
+            }
             std::this_thread::sleep_for(200ms);
+            
         }
     }
     

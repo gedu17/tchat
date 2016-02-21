@@ -20,17 +20,18 @@
 #include "structs.h"
 #ifndef CLIENT_H
 #define	CLIENT_H
-
+#include "friendslist.h"
 class Client {
 public:
-    Client(string fingerprint, gpgme_ctx_t gpgctx, string homedir, string keyserver);
+    Client(string fingerprint, gpgme_ctx_t gpgctx, string homedir, string keyserver, friendslist *fl);
     virtual ~Client();
     
     /* Default vector for function callbacks */
     static vector<function<void(string)>> DEFAULT_FNC_VECTOR;
-    
+    static bool obj_status;
     /* Public methods used initialising object and client thread */
     bool create_socket();
+    bool create_qsocket();
     int get_out_port();
     
     /* Public methods used by client thread. */
@@ -39,6 +40,9 @@ public:
     void check_tq();
     void send_packet();
     void receive_packet();
+    
+    void send_qpacket();
+    void receive_qpacket();
     
     /* Public methods used by ui */
     void queue_data(string to, int type, string data, vector<function<void(string)>> fnc = DEFAULT_FNC_VECTOR, int connected = 1);
@@ -60,7 +64,8 @@ private:
     
     /* Variables */
     int sock;
-    int buffer_size;
+    QUdpSocket *qsock;
+    uint buffer_size;
     int out_port;
     
     bool socket_created;
@@ -69,9 +74,9 @@ private:
     string keyserver;
     string fingerprint;
   
-    int max_missing_packets;
-    int conn_hash_length;
-    int backup_length;
+    uint max_missing_packets;
+    uint conn_hash_length;
+    uint backup_length;
     unsigned char *buffer;
     
     gpgme_ctx_t gpgctx;
@@ -83,12 +88,14 @@ private:
 
     sps last_send_struct;
     
+    friendslist *fl;
+    
     //mutex
     mutex send_lock;
     
     /* Struct */
-    sockaddr_in get_struct(string id);
-    addrinfo *get_struct(string id, bool conn);
+    us get_struct(string id);
+    //addrinfo *get_structv2(string id);
     
     /* Packet */
     string create_packet(int type, string data, uint8_t packet_number, int connected);
@@ -110,7 +117,7 @@ private:
     uint8_t get_heartbeat_rate(string id);
     uint8_t get_my_optimal_heartbeat();
     uint8_t get_my_packet_num(string id);
-    string get_conn_str_id(sockaddr_in fromaddr, bool should_be = true);
+    string get_conn_str_id(us fromaddr, bool should_be = true);
     string get_random_msg();
     
     /* Setters */
@@ -121,7 +128,7 @@ private:
     void set_his_packet_num(string id, uint8_t packet);
     
     /* Booleans */
-    bool is_connected(sockaddr_in str);
+    bool is_connected(us str);
     bool is_missing_packets(string id);
     bool is_still_connected(string id);
     bool is_fingerprint_in_keychain(string fingerprint);
@@ -131,12 +138,12 @@ private:
     void remove_peer(string id);
     
     /* Response methods */
-    void handle_connect(int type, sockaddr_in fromaddr);
-    void handle_data(sockaddr_in fromaddr, bool skip = false);
-    void handle_bad_info(sockaddr_in fromaddr);
-    void handle_disconnect(sockaddr_in fromaddr);
-    void handle_heartbeat(int type, sockaddr_in fromaddr);
-    void handle_missing_packets(int type, sockaddr_in fromaddr);
+    void handle_connect(int type, us fromaddr);
+    void handle_data(us fromaddr, bool skip = false);
+    void handle_bad_info(us fromaddr);
+    void handle_disconnect(us fromaddr);
+    void handle_heartbeat(int type, us fromaddr);
+    void handle_missing_packets(int type, us fromaddr);
     
     /* Callbacks after packet is sent */
     void callback_disconnect(string id);

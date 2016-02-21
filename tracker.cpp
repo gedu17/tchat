@@ -24,12 +24,13 @@ Tracker::Tracker(string hostname, int port) {
     this->port = port;
     this->connected = false;
     this->sock = 0;
-    this->socket_port = 0;
+    this->socket_port = port;
     this->action = 0;
     this->hash = "";
     this->waiting_response = false;
     this->action_time = steady_clock::now();
     this->log = Log::getInstance();
+    this->announcing = false;
 }
 
 /* Setters */
@@ -104,6 +105,10 @@ void Tracker::set_socket(int sock) {
     this->sock = sock;
 }
 
+void Tracker::set_socket(QUdpSocket *sock) {
+    this->qsock = sock;
+}
+
 void Tracker::set_socket_port(int port) {
     this->socket_port = port;
 }
@@ -155,14 +160,18 @@ string Tracker::get_hostname() {
     return this->hostname;
 }
 
-in_addr Tracker::get_hostname_in() {
-    sockaddr_in *tmp = (struct sockaddr_in *)this->server_sock->ai_addr;
-    return tmp->sin_addr;
+quint32 Tracker::get_hostname_in() {
+    //sockaddr_in *tmp = (struct sockaddr_in *)this->server_sock->ai_addr;
+    //return tmp->sin_addr;
+    //return 
+    //return this->hostname;
+    return this->server_sock.toIPv4Address();
 }
 
-in_port_t Tracker::get_port_in() {
-    sockaddr_in *tmp = (struct sockaddr_in *)this->server_sock->ai_addr;
-    return tmp->sin_port;
+quint16 Tracker::get_port_in() {
+    //sockaddr_in *tmp = (struct sockaddr_in *)this->server_sock->ai_addr;
+    //return tmp->sin_port;
+    return this->socket_port;
 }
 
 int Tracker::get_reannounce() {
@@ -188,26 +197,32 @@ void Tracker::announce(string hash, int type, uint16_t port) {
         this->set_announce_port(port);
         this->hash.clear();
         int j = 0;
+        cout << "hash = " << hash << " ; " << hash.size() << endl;
         for(int i = 0; i< 20; i++) {
             this->hash += this->string_to_hex(hash.at(j), hash.at(j+1));
             j += 2;
         }
+        cout << "veikiam !" << endl;
         this->ascii_hash = hash;
         this->action = 1;
         this->announce_type = type;
+        
         this->generate_random_key();
+        cout << "veikiam 2" << endl;
         this->create_packet(1);
+        cout << "veikiam 3" << endl;
         tqs str;
         str.action = 1;
         str.action_type = type;
         str.hash = hash;
         string tid;
+        cout << "veikiam 4" << endl;
         for(uint i = 0; i < this->transaction_id.size(); i++) {
             tid += this->transaction_id.at(i);
         }
         str.transaction_id = tid;
         utils::insert_tq(str);    
-
+        cout << "veikiam 5" << endl;
         this->dump();
         this->send_packet();
         this->waiting_response = true;
@@ -272,10 +287,10 @@ void Tracker::connect() {
     if (!this->connected) {
         string tmpmsg = "Connecting to tracker ";
         tmpmsg += this->hostname;
-        this->log.write(tmpmsg);
+        this->log.write(tmpmsg, 1);
         this->create_packet(0);
         
-        struct sockaddr_in *server;
+        /*struct sockaddr_in *server;
         struct addrinfo *info;
         addrinfo hints;
         int err;
@@ -299,10 +314,21 @@ void Tracker::connect() {
             tmp += gai_strerror(err);
             this->log.write(tmp, 2);
             return;
+        }*/
+        QHostInfo info = QHostInfo::fromName(QString(this->hostname.c_str()));
+        QList<QHostAddress> list = info.addresses();
+        if(info.addresses().isEmpty()) {
+            string tmp = "Could not find the hostname ";
+            tmp += this->hostname;
+            tmp += "\n";
+            this->log.write(tmp, 2);
+            return;
+        } else {            
+            this->server_sock = info.addresses().at(0);
+            this->send_packet();
+            this->waiting_response = true;        
         }
-
-        this->send_packet();
-        this->waiting_response = true;        
+        
     } else {
         this->log.write("Already connected to tracker.");
     }
@@ -493,7 +519,7 @@ void Tracker::create_packet(int type) {
 }
 
 int Tracker::send_packet() {
-    int len = sendto(this->sock, this->packet.c_str(), this->packet.size(), 0, this->server_sock->ai_addr, this->server_sock->ai_addrlen);
+   /* int len = sendto(this->sock, this->packet.c_str(), this->packet.size(), 0, this->server_sock->ai_addr, this->server_sock->ai_addrlen);
     if (len < 0) {
         this->log.write("Failed to send UDP packet to server", 2);
         string tmp = to_string(errno);
@@ -501,7 +527,17 @@ int Tracker::send_packet() {
         tmp += strerror(errno);
         this->log.write(tmp, 2);
     }
-    return len;
+    return len;*/
+    qint64 len = this->qsock->writeDatagram(this->packet.c_str(), this->packet.size(), this->server_sock, this->socket_port);
+    if (len < 0) {
+        this->log.write("Failed to send UDP packet to server", 2);
+        string tmp = to_string(errno);
+        tmp += " \n";
+        tmp += strerror(errno);
+        this->log.write(tmp, 2);
+    }
+    return (int)len;
+    
 }
 
 /* Helper methods */
@@ -672,8 +708,12 @@ int Tracker::string_to_hex(char first, char second){
     return (16*firstval + secondval);
 }
 
+bool Tracker::is_connected() {
+    return this->connected;
+}
+
 Tracker::~Tracker() {
-    freeaddrinfo(this->server_sock);
+    //freeaddrinfo(this->server_sock);
     close(this->sock);
     
 }

@@ -29,8 +29,8 @@ public:
     
     /* Settings */
     void create_settings();
-    bool read_settings();
-    void update_settings();
+    void read_settings(int id);
+    //void update_settings();
     
     /* Alias */
     void change_alias(string alias);
@@ -39,6 +39,10 @@ public:
     /* Key */
     string get_key();
     void set_key(string key);
+    
+    /* Avatar */
+    string get_avatar();
+    void set_avatar(string avatar);
 private:
     /* Variables */
     string file;
@@ -46,9 +50,14 @@ private:
     string dir;
     string gpgdir;
     string alias;
+    string avatar;
+    int id;
     
     /* Log */
     Log log;
+    
+    /* QtSql */
+    QSqlDatabase *db;
 };
 
 #endif	/* SETTINGS_H */

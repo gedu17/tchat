@@ -19,6 +19,12 @@
 #ifndef STRUCTS_H
 #define	STRUCTS_H
 
+//UDP address and port struct
+struct us {
+    QHostAddress adr;
+    quint16 port;
+};
+
 //tracker action struct
 struct tas {
     int id;
@@ -39,7 +45,7 @@ struct sps {
 //connected struct
 struct cs {
     string hash;
-    sockaddr_in str;
+    us str;
     uint8_t his_packet_num = 0;
     uint8_t my_packet_num = 0;
     string conn_hash;
@@ -53,7 +59,7 @@ struct cs {
 
 //connect to struct
 struct cts {
-    addrinfo *str;
+    us str;
     string id;
 };
 
@@ -100,6 +106,16 @@ struct tqs {
     int seeders = 0;
     int leechers = 0;
 };
+
+/*struct frs {
+    string fingerprint;
+    int status = 0;
+    string csid;
+    string custom_status = "";
+    string alias;
+    string avatar = DEFAULT_AVATAR_FILE;
+    long int last_seen = 0;
+};*/
 
 #endif	/* STRUCTS_H */
 

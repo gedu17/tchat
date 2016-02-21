@@ -24,7 +24,7 @@ namespace tracker_thread {
     /* Actions */
     void add_action(int id, int announce_type, string hash = "");
     void add_action(int id, vector<string> hashes);
-    void remove_action(int id);    
+    void remove_action(uint id);    
     
     /* Workflow */
     void run();
@@ -32,7 +32,8 @@ namespace tracker_thread {
     
     /* Helpers */
     bool add_tracker(string hostname, int port);
-    bool create_socket();
+    void create_socket();
+    void create_qsocket();
     void set_announce_hash(string hash);
     void set_client_port(int port);
     void receive_packet();

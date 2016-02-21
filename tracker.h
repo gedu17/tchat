@@ -33,6 +33,8 @@ public:
     void set_announce_port(uint16_t port);
     void set_buffer(unsigned char buffer[BUFFER_LENGTH], int size);
     void set_socket(int sock);
+    void set_socket(QUdpSocket *sock);
+    void set_socket_port(quint16 port);
     void set_socket_port(int port);
     void set_waiting_response(bool value);    
     
@@ -44,8 +46,8 @@ public:
     bool get_announcing();
     bool get_connected();
     string get_hostname();
-    in_addr get_hostname_in();
-    in_port_t get_port_in();
+    quint32 get_hostname_in();
+    quint16 get_port_in();
     int get_reannounce();
     bool get_waiting_response();  
     
@@ -62,7 +64,7 @@ public:
     void finish_scrape();
     
     /* Helpers */
-    
+    bool is_connected();
     void dump();
 
 private:
@@ -99,9 +101,10 @@ private:
     int reannounce;
     
     //struct sockaddr_in *server_sock;
-    addrinfo *server_sock;
+    QHostAddress server_sock;
     int sock;
-    int socket_port;
+    QUdpSocket *qsock;
+    quint16 socket_port;
     
     vector<unsigned char> transaction_id;
     

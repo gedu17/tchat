@@ -18,10 +18,11 @@
 #include "client.h"
 #include "utils.h"
 
-//static item
+//static items
 vector<function<void(string)>> Client::DEFAULT_FNC_VECTOR = vector<function<void(string)>>();
+bool Client::obj_status = false;
 
-Client::Client(string fingerprint, gpgme_ctx_t gpgctx, string homedir, string keyserver) {
+Client::Client(string fingerprint, gpgme_ctx_t gpgctx, string homedir, string keyserver, friendslist *fl) {
     this->log = Log::getInstance();
     this->buffer = new unsigned char[BUFFER_LENGTH];
     this->max_missing_packets = 10;
@@ -32,6 +33,8 @@ Client::Client(string fingerprint, gpgme_ctx_t gpgctx, string homedir, string ke
     this->keyserver = keyserver;
     this->fingerprint = fingerprint;
     this->gpgctx = gpgctx;
+    this->fl = fl;
+    Client::obj_status = true;
 }
 
 Client::~Client() {
@@ -133,17 +136,21 @@ string Client::get_conn_id() {
     return "";
 }
 
-string Client::get_conn_str_id(struct sockaddr_in fromaddr, bool should_be) {
+string Client::get_conn_str_id(us fromaddr, bool should_be) {
     string id = "";
     for(uint i = 0; i < this->conn_queue.size(); i++) {
-        if(inet_ntoa(this->conn_queue.at(i).str.sin_addr) == inet_ntoa(fromaddr.sin_addr)) {
+        /*if(inet_ntoa(this->conn_queue.at(i).str.sin_addr) == inet_ntoa(fromaddr.sin_addr)) {
+            id = this->conn_queue.at(i).conn_hash;
+            break;
+        }*/
+        if(this->conn_queue.at(i).str.adr.toString().toStdString() == fromaddr.adr.toString().toStdString()) {
             id = this->conn_queue.at(i).conn_hash;
             break;
         }
     }
     if(id == "" && should_be) {
         string tmp = "Failed to find conn structure id for addr ";
-        tmp += inet_ntoa(fromaddr.sin_addr);
+        tmp += fromaddr.adr.toString().toStdString();//inet_ntoa(fromaddr.sin_addr);
         this->log.write(tmp);
     }
     
@@ -181,12 +188,12 @@ void Client::get_missing_packets(string id) {
     string data;
     for(uint i = 0; i < this->conn_queue.size(); i++) {
         if(this->conn_queue.at(i).conn_hash == id) {
-            for(uint i = this->conn_queue.at(i).his_packet_num+1; i < this->buffer[1]; i++) {
-                data += (uint8_t)i;
+            for(uint j = this->conn_queue.at(i).his_packet_num+1; j < this->buffer[1]; j++) {
+                data += (uint8_t)j;
                 mps tmp;
                 tmp.added = steady_clock::now();
                 tmp.id = id;
-                tmp.packet_id = i;
+                tmp.packet_id = j;
                 this->missing_packet_queue.push_back(tmp);
             }
             break;
@@ -229,8 +236,8 @@ string Client::get_random_msg() {
     return ret;
 }
 
-sockaddr_in Client::get_struct(string id) {
-    sockaddr_in empty;
+us Client::get_struct(string id) {
+    us empty;
     if(this->conn_queue.size() == 0) {
         this->log.write("Bad struct id", 2);
         return empty;
@@ -245,10 +252,11 @@ sockaddr_in Client::get_struct(string id) {
     }
 }
 
-addrinfo *Client::get_struct(string id, bool conn) {
+/*addrinfo *Client::get_structv2(string id) {
     addrinfo *empty;
     if(this->conn_to_queue.size() == 0) {
         this->log.write("Bad struct id", 2);
+        getaddrinfo("127.0.0.1", NULL, NULL, &empty);
         return empty;
     } else {
         for(uint i = 0; i < this->conn_to_queue.size(); i++) {
@@ -259,7 +267,7 @@ addrinfo *Client::get_struct(string id, bool conn) {
         this->log.write("Bad struct id", 2);
         return empty;
     } 
-}
+}*/
 
 /* Checks */
 
@@ -352,7 +360,7 @@ void Client::callback_heartbeat(string id) {
 
 /* Handles */
 
-void Client::handle_bad_info(sockaddr_in fromaddr) {
+void Client::handle_bad_info(us fromaddr) {
     string tmp = "Got bad info packet from ";
     string id = this->get_conn_str_id(fromaddr);
     tmp += id;
@@ -362,7 +370,7 @@ void Client::handle_bad_info(sockaddr_in fromaddr) {
 }
 
 //Handles all incoming packets regarding connection
-void Client::handle_connect(int type, sockaddr_in fromaddr) {
+void Client::handle_connect(int type, us fromaddr) {
     if(type == 0) {    
         if(this->is_connected(fromaddr)){
             this->log.write("User trying to connect, but already connected.", 3);
@@ -527,7 +535,7 @@ void Client::handle_connect(int type, sockaddr_in fromaddr) {
             this->queue_data(id, 0x06, data, fnc);
         } else {
             string tmp = "Connect structure not found for peer ";
-            tmp += inet_ntoa(fromaddr.sin_addr);
+            tmp += fromaddr.adr.toString().toStdString();//inet_ntoa(fromaddr.sin_addr);
             this->log.write(tmp);
         }
     } else if(type == 3) {
@@ -542,7 +550,7 @@ void Client::handle_connect(int type, sockaddr_in fromaddr) {
 }
 
 //Method which routes packets to other methods
-void Client::handle_data(sockaddr_in fromaddr, bool skip) {
+void Client::handle_data(us fromaddr, bool skip) {
     string id = "";
     if(this->is_connected(fromaddr)) {
         //set new received timer
@@ -557,6 +565,7 @@ void Client::handle_data(sockaddr_in fromaddr, bool skip) {
             }
         }
     }
+    
     switch(this->buffer[0]){
         case 0x00:
         {
@@ -626,35 +635,52 @@ void Client::handle_data(sockaddr_in fromaddr, bool skip) {
         
         case 0x20://im
         {
+            //TODO: add check if in friends list & whether friend request packets, if not send 0x0b 
             string id = this->get_conn_str_id(fromaddr);
-            string msg;
-            for(uint i = 2; i < this->buffer_size; i++) {
-                msg += this->buffer[i];
+            string fp = "";
+            for(uint i = 0; i < this->conn_queue.size(); i++) {
+                if(this->conn_queue.at(i).conn_hash == id) {
+                    fp = this->conn_queue.at(i).hash;
+                    break;
+                }
             }
-            string tmp = "Got message: ";
-            tmp += msg;
-            this->log.write(tmp);
+            if(this->fl->is_friend(fp)) {
+                
+                string msg;
+                for(uint i = 2; i < this->buffer_size; i++) {
+                    msg += this->buffer[i];
+                }
+                string tmp = "Got message: ";
+                tmp += msg;
+                this->log.write(tmp);
+
+                cout << "Esam draugai )" << endl;
+            } else {
+                cout << "Nesam draugai tai krc tavo zinutes nepraeis :(" << endl;
+                this->queue_data(id, 0x0B, "", DEFAULT_FNC_VECTOR);
+            }
+            
             break;
         }
     }
 }
 
-void Client::handle_disconnect(sockaddr_in fromaddr) {
+void Client::handle_disconnect(us fromaddr) {
     string id = this->get_conn_str_id(fromaddr);
     if(id == "") {
         string tmp = "Failed to disconnect from ";
-        tmp += inet_ntoa(fromaddr.sin_addr);
+        tmp += fromaddr.adr.toString().toStdString();//inet_ntoa(fromaddr.sin_addr);
         tmp += ". Probably already disconnected";
         this->log.write(tmp);
     } else {
         string tmp = "Disconnected from peer ";
-        tmp += inet_ntoa(fromaddr.sin_addr);
+        tmp += fromaddr.adr.toString().toStdString();//inet_ntoa(fromaddr.sin_addr);
         this->log.write(tmp);
         this->remove_peer(id);
     }
 }
 
-void Client::handle_heartbeat(int type, sockaddr_in fromaddr) {
+void Client::handle_heartbeat(int type, us fromaddr) {
     string id = this->get_conn_str_id(fromaddr);
     vector<function<void(string)>> fnc;
     fnc.push_back(bind(&Client::add_to_sent_packets, this, id));
@@ -683,7 +709,7 @@ void Client::handle_heartbeat(int type, sockaddr_in fromaddr) {
     }
 }
 
-void Client::handle_missing_packets(int type, sockaddr_in fromaddr) {
+void Client::handle_missing_packets(int type, us fromaddr) {
     string id = this->get_conn_str_id(fromaddr);
     if(type == 0) {
         vector<sps> tmp;
@@ -714,6 +740,7 @@ void Client::handle_missing_packets(int type, sockaddr_in fromaddr) {
                         return tmp.at(i).packet;
                     }
                 }
+                return "";
             };
             
             for(uint i = 2; i < this->buffer_size; i++) {
@@ -793,7 +820,7 @@ void Client::remove_peer(string id) {
 
 /* Booleans */
 
-bool Client::is_connected(sockaddr_in str) {
+bool Client::is_connected(us str) {
     string id = this->get_conn_str_id(str, false);
     if(id == "") {
         return false;
@@ -850,6 +877,7 @@ bool Client::is_missing_packets(string id) {
             }
         }
     }
+    return false;
 }
 
 bool Client::is_still_connected(string id) {
@@ -889,6 +917,14 @@ bool Client::create_socket() {
     socklen_t addrlen = sizeof(addrlen);
     getsockname(this->sock, (struct sockaddr *) &addr, &addrlen);
     this->out_port = ntohs(addr.sin_port);
+    this->socket_created = true;
+    return true;
+}
+
+bool Client::create_qsocket() {
+    this->qsock = new QUdpSocket();
+    this->qsock->bind();
+    this->out_port = this->qsock->localPort();
     this->socket_created = true;
     return true;
 }
@@ -1009,9 +1045,9 @@ string Client::create_packet(int type, string data, uint8_t packet_number, int c
 }
 
 void Client::receive_packet() {
-    struct sockaddr_in fromaddr;
+    /*struct sockaddr_in fromaddr;
     socklen_t addrlen = sizeof (fromaddr);
-    int in = recvfrom(this->sock, this->buffer, BUFFER_LENGTH, 0, (struct sockaddr *) &fromaddr, &addrlen);
+    uint in = recvfrom(this->sock, this->buffer, BUFFER_LENGTH, 0, (struct sockaddr *) &fromaddr, &addrlen);
     if(in > 0) {
         string tmp = "New data ( ";
         tmp += to_string(in);
@@ -1020,14 +1056,43 @@ void Client::receive_packet() {
         this->log.write(tmp, 1);
         if (DEBUG) {
             for(uint i = 0; i < in; i++) {
-                printf("%x ", this->buffer[i]);
+                //printf("%x ", this->buffer[i]);
+                cout << this->buffer[i];
             }
             cout << endl;
         }
         this->buffer_size = in;
         this->handle_data(fromaddr);
         this->clear_buffer();
-    }     
+    }     */
+}
+
+void Client::receive_qpacket() {
+    while(this->qsock->hasPendingDatagrams()) {
+        QByteArray datagram;
+        datagram.resize(this->qsock->pendingDatagramSize());
+        QHostAddress sender;
+        quint16 senderPort;
+
+        this->qsock->readDatagram(datagram.data(), datagram.size(),
+                                &sender, &senderPort);
+        string tmp = "New data ( ";
+        tmp += to_string(datagram.size());
+        tmp += " ) from ";
+        tmp += sender.toString().toStdString();
+        this->log.write(tmp, 1);
+        
+        //rewrite to our buffer
+        for(int i = 0; i < datagram.size(); i++) {
+            this->buffer[i] = datagram.at(i);
+        }
+        this->buffer_size = datagram.size();
+        us tmpus;
+        tmpus.adr = sender;
+        tmpus.port = senderPort;
+        this->handle_data(tmpus);
+        this->clear_buffer();
+    }        
 }
 
 void Client::send_packet() {    
@@ -1036,8 +1101,12 @@ void Client::send_packet() {
         for(uint i = 0; i < this->send_queue.size(); i++) {
             if(this->send_queue.at(i).conn == 1) {
                 if(this->is_still_connected(this->send_queue.at(i).id)){
-                    sockaddr_in str = this->get_struct(this->send_queue.at(i).id);
-                    sendto(this->sock, this->send_queue.at(i).packet.c_str(), this->send_queue.at(i).packet.length(), 0, (struct sockaddr *) &str, sizeof (str));
+                    //sockaddr_in str = this->get_struct(this->send_queue.at(i).id);
+                    //sendto(this->sock, this->send_queue.at(i).packet.c_str(), this->send_queue.at(i).packet.length(), 0, (struct sockaddr *) &str, sizeof (str));
+                    us str = this->get_struct(this->send_queue.at(i).id);
+                    //quint16 strport = //get port from cs (create new method and new field in struct)
+                    this->qsock->writeDatagram(this->send_queue.at(i).packet.c_str(), this->send_queue.at(i).packet.length(), str.adr, str.port);
+                    
                     
                     this->last_send_struct = this->send_queue.at(i);
                     for(uint j = 0; j < this->send_queue.at(i).fnc.size(); j++) {
@@ -1045,8 +1114,10 @@ void Client::send_packet() {
                     }
                 }
             } else {
-                addrinfo *str = this->get_struct(this->send_queue.at(i).id, false);
-                sendto(this->sock, this->send_queue.at(i).packet.c_str(), this->send_queue.at(i).packet.length(), 0, str->ai_addr, str->ai_addrlen);
+                //addrinfo *str = this->get_structv2(this->send_queue.at(i).id);
+                us str = this->get_struct(this->send_queue.at(i).id);
+                this->qsock->writeDatagram(this->send_queue.at(i).packet.c_str(), this->send_queue.at(i).packet.length(), str.adr, str.port);
+                //sendto(this->sock, this->send_queue.at(i).packet.c_str(), this->send_queue.at(i).packet.length(), 0, str->ai_addr, str->ai_addrlen);
                 
                 this->last_send_struct = this->send_queue.at(i);
                 for(uint j = 0; j < this->send_queue.at(i).fnc.size(); j++) {
@@ -1062,7 +1133,7 @@ void Client::send_packet() {
 /* Connectivity */
 
 void Client::connect(string ip, int port) {
-    sockaddr_in *server;
+    /*sockaddr_in *server;
     addrinfo *info;
     addrinfo hints;
     int err;
@@ -1078,6 +1149,7 @@ void Client::connect(string ip, int port) {
         server = (struct sockaddr_in *)info->ai_addr;
         server->sin_port = htons(port);
         cts str;
+        //FIXME: change stuff to qsocket stuff
         str.str = info;
         str.id = this->generate_conn_hash();
         this->conn_to_queue.push_back(str);        
@@ -1089,7 +1161,15 @@ void Client::connect(string ip, int port) {
         tmp += gai_strerror(err);
         this->log.write(tmp, 2);
         return;
-    }
+    }*/
+    cts str;
+    str.id = this->generate_conn_hash();;
+    us tmp;
+    tmp.adr = QHostAddress(QString(ip.c_str()));
+    tmp.port = port;
+    str.str = tmp;
+    this->conn_to_queue.push_back(str);        
+    this->queue_data(str.id, 0, "", DEFAULT_FNC_VECTOR, 0);
 }
 
 void Client::disconnect(string id) {

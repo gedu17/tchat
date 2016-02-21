@@ -50,13 +50,51 @@
 /* Gpgme */
 #include <gpgme.h>
 
+/* Qt */
+#include <QApplication>
+#include <QtCore/QVariant>
+#include <QtWidgets/QAction>
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QButtonGroup>
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QGraphicsView>
+#include <QtWidgets/QHeaderView>
+#include <QtWidgets/QMainWindow>
+#include <QtWidgets/QMenu>
+#include <QtWidgets/QMenuBar>
+#include <QtWidgets/QPushButton>
+#include <QtWidgets/QStackedWidget>
+#include <QtWidgets/QStatusBar>
+#include <QtWidgets/QTextBrowser>
+#include <QtWidgets/QVBoxLayout>
+#include <QtWidgets/QWidget>
+#include <QtWidgets/QListView>
+
+#include <QGraphicsPixmapItem>
+#include <QRadioButton>
+#include <QDebug>
+#include <QList>
+#include <QLabel>
+#include <QLineEdit>
+#include <QListWidget>
+#include <QPlainTextEdit>
+#include <QtWebKitWidgets/QWebView>
+#include <QtSql>
+#include <QMessageBox>
+#include <QUdpSocket>
+#include <QHostInfo>
+#include <QThread>
+
+
 /* Defines */
 #define BUFFER_LENGTH 512
 #define DEBUG 1
 #define DEFAULT_ALIAS "I am unnamed"
 #define DEFAULT_KEY_SERVER "pgp.mit.edu"
 #define DEFAULT_SETTINGS_FILE "settings.txt"
-
+#define DEFAULT_FRIENDSLIST_FILE "friends.txt"
+#define DEFAULT_AVATAR_FILE "images/avatar.png"
+#define CHATLOG_SELF_CONST "Me"
 /* Namespaces */
 using namespace std;
 
