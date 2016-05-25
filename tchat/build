@@ -1,0 +1,1 @@
+ g++ Client.cpp ClientThread.cpp Log.cpp Settings.cpp stdafx.cpp tchat.cpp Tracker.cpp TrackerThread.cpp Utils.cpp -std=gnu++14 -lgpgme -lgpg-error -pthread -o build/tchat -g
