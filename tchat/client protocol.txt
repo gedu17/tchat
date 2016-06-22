@@ -19,7 +19,7 @@ Data type (1byte) - Packet number (1 byte uint8_t) - Data (x bytes)
 * Connection process *
 
 Initiate connection by sending 0x00 packet.
-If information is correct 0x01 is received, otherwise 0x03.
+If information is correct 0x01 then is received, otherwise 0x03.
 Check if other peer's public key is good. If it is send 0x02, otherwise 0x03.
 Then send 0x06 with desired length. 0x07 is received with heartbeat length.
 
@@ -31,15 +31,6 @@ Then send 0x06 with desired length. 0x07 is received with heartbeat length.
 
 * Communication *
 
-0x20 im
-0x21 voice
-0x22 video
-
-
-* Connection process V2 *
-
-Search for fingerprint in tracker. 
-Send connect request.
-Receive his data, verify his fingerprint.
-Send connection accepted.
-Agree on heartbeat rate.
+0x20 message
+0x21 voice - not implemented
+0x22 video - not implemented
